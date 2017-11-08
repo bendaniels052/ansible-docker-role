@@ -1,0 +1,27 @@
+---
+
+- name: Install docker
+  hosts: localhost
+  vars_files:
+    - "environment_vars/{{ aws_region | default('eu-west-1') }}/vars"
+  roles:
+    - { name: docker, docker_additonal_volume: false } 
+
+- hosts: localhost
+  tasks:
+  - name: TEST - Start HelloWorld Container
+    docker_container:
+      name: hello-world
+      detach: False
+      image: hello-world
+      cleanup: True
+    become: yes
+
+- hosts: localhost
+  tasks:
+  - name: TEST - Remove HelloWorld Image
+    docker_image:
+      name: hello-world
+      state: absent
+    become: yes
+

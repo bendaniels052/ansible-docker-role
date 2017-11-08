@@ -1,0 +1,16 @@
+---
+galaxy_info:
+  author: Ben Daniels
+  description: Docker CE for Linux
+  min_ansible_version: 2.2
+
+  platforms:
+  - name: EL
+    versions:
+    - all
+
+  galaxy_tags:
+  - docker
+  - orchestration
+
+dependencies: []

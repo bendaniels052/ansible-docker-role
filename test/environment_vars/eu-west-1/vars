@@ -1,0 +1,5 @@
+---
+cloudenv_prefix: WE1-P2-0318
+
+aws_iaas_ec2_instance_type: t2.small
+aws_region: eu-west-1

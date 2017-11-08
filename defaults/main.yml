@@ -1,0 +1,16 @@
+## Docker CE settings
+docker_edition: 'ce'
+docker_yum_repo_url: https://download.docker.com/linux/centos/docker-{{ docker_edition }}.repo
+docker_package_state: present
+docker_package: "docker-{{ docker_edition }}"
+
+## Docker Storage Size
+docker_additonal_volume: "true"
+docker_storage_type: "disk"
+docker_storage_device: "/dev/xvdcz"
+docker_storage_location: /docker
+docker_storage_size: 60480
+lv_list:
+ thinpool: '96%VG'
+ thinpoolmeta: '1%VG'
+

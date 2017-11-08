@@ -1,0 +1,101 @@
+---
+
+- name: Ensure version of non Docker Edition are not installed.
+  package:
+    name: '{{ item }}'
+    state: absent
+  with_items:
+    - docker
+    - docker-common
+    - docker-engine
+    - docker-engine-selinux
+    - docker-selinux
+  become: yes
+
+- name: Add Docker repository.
+  get_url:
+    url: "{{ docker_yum_repo_url }}"
+    dest: '/etc/yum.repos.d/docker.repo'
+    owner: root
+    group: root
+    mode: 0600
+  become: yes
+
+- name: Install required packages
+  package:
+    name: '{{ item }}'
+  with_items:
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+    - docker-ce
+  become: yes
+
+- block:
+    - name: Docker - Create docker LVM PV and VG
+      lvg:
+        vg: docker
+        pvs: "{{ docker_storage_device }}"
+      become: yes
+
+    - name: Docker - Create Docker LVM thinpool/thinpoolmeta
+      lvol:
+        vg: docker
+        lv: "{{ item.key }}"
+        size: "{{ item.value }}"
+        force: yes
+        opts: '--wipesignatures y'
+      with_dict: "{{ lv_list }}"
+      become: yes
+
+    - name: Docker - Convert docker storage pool to thinpool
+      command: lvconvert -y --zero n -c 512K --thinpool docker/thinpool --poolmetadata docker/thinpoolmeta
+      tags:
+      - skip_ansible_lint
+      become: yes
+
+    - name: Docker - Create docker thinpool LVM profile
+      copy:
+        src: docker-thinpool.profile
+        dest: /etc/lvm/profile/
+        owner: root
+        group: root
+        mode: 0644
+      become: yes
+
+    - name: Docker - Create /etc/docker directory if it doesnt exist
+      file:
+        path: /etc/docker
+        state: directory
+        mode: 0755
+      become: yes
+
+    - name: Docker - Copy docker daemon configuration file
+      copy:
+        src: daemon.json
+        dest: /etc/docker/daemon.json
+        owner: root
+        group: root
+        mode: 0644
+      become: yes
+
+    - name: Docker - Apply new docker storage LVM profile
+      command: lvchange --metadataprofile docker-thinpool docker/thinpool
+      tags:
+      - skip_ansible_lint
+      become: yes
+  when: docker_additonal_volume == 'true'
+
+- name: Install pip docker-py
+  pip:
+    name: docker-py
+    umask: '0022'
+  become: yes
+
+- name: Enable Docker Service
+  service:
+    name: docker
+    enabled: yes
+    state: started
+  become: yes
+
